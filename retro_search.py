@@ -58,7 +58,6 @@ es = Elasticsearch("https://localhost:9200", http_auth=("so_elastic", "g32dwgWAe
 # IP search function  #
 #######################
 def RETRO_IP_SEARCH(SEARCH_TIME_FRAME):
-	print(SEARCH_TIME_FRAME)
 	with open('retrosearch_ip.dat') as file_object:
 		for line in file_object:
 			IP_ADDRESS = (line.rstrip())
