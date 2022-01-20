@@ -35,19 +35,21 @@ example: sudo python3 retroseach.py IP 2
 #####################
 #Check for CLI args #
 #####################
-if len(sys.argv) > 1:
-	RETRO_SEARCH_TYPE = sys.argv[1]
-	RETRO_SEARCH_TIMEFRAME = sys.argv[2]
-	if RETRO_SEARCH_TYPE == "IP":
-		print("IP")
-	elif RETRO_SEARCH_TYPE == "DOMAIN":
-		print("DOAMIN")
-	elif RETRO_SEARCH_TYPE == "HASH":
-		print("HASH")
-	elif RETRO_SEARCH_TYPE != "IP" or "DOMAIN" or "HASH":
-		print(" ")
-		print("Input not recognized! Please use the following format:")
-		print(RETRO_USAGE)
+#if len(sys.argv) > 1:
+#	RETRO_SEARCH_TYPE = sys.argv[1]
+#	RETRO_SEARCH_TIMEFRAME = sys.argv[2]
+#	if RETRO_SEARCH_TYPE == "IP":
+#		SEARCH_TIME_FRAME = "now-" + RETRO_SEARCH_TIMEFRAME + "d/d"
+#		RETRO_IP_SEARCH(SEARCH_TIME_FRAME)
+#		exit
+#	elif RETRO_SEARCH_TYPE == "DOMAIN":
+#		print("DOAMIN")
+#	elif RETRO_SEARCH_TYPE == "HASH":
+#		print("HASH")
+#	elif RETRO_SEARCH_TYPE != "IP" or "DOMAIN" or "HASH":
+#		print(" ")
+#		print("Input not recognized! Please use the following format:")
+#		print(RETRO_USAGE)
 
 #################################	
 # elasticsearch config settings #
@@ -82,12 +84,12 @@ def RETRO_IP_SEARCH(SEARCH_TIME_FRAME):
 ##########################
 # Domain search function #
 ##########################
-def RETRO_DOMAIN_SEARCH():
+def RETRO_DOMAIN_SEARCH(SEARCH_TIME_FRAME):
 	with open('retrosearch_domain.dat') as file_object:
 		for line in file_object:
 			DOMAIN_WILDCARD = (line.rstrip())
 			DOMAIN_NAME = "*" + DOMAIN_WILDCARD + "*"
-			resp = es.search(index="so-zeek-*", body={"query": {"bool": {"must": [{"wildcard" : {"dns.query.name.keyword": DOMAIN_NAME }}]}}}, filter_path=['hits.hits._source'], size=1)
+			resp = es.search(index="so-zeek-*", body={"query": {"bool": {"must": [{"wildcard": {"dns.query.name.keyword": DOMAIN_NAME}},{"range":{"@timestamp":{"gte": SEARCH_TIME_FRAME, "lt": "now"}}}]}}}, filter_path=['hits.hits._source'], size=1)
 			resp_filter = resp.get('hits', {}).get('hits')
 			resp_string = str(resp_filter)
 			if len(resp_string) >= 5:
@@ -108,11 +110,11 @@ def RETRO_DOMAIN_SEARCH():
 ########################
 # Hash search Function #
 ########################
-def RETRO_HASH_SEARCH():
+def RETRO_HASH_SEARCH(SEARCH_TIME_FRAME):
 	with open('retrosearch_hash.dat') as file_object:
 		for line in file_object:
 			FILE_HASH = (line.rstrip())
-			resp = es.search(index="so-zeek-*", body={"query": {"bool": {"must": [{"wildcard" : {"hash.md5":FILE_HASH }}]}}}, filter_path=['hits.hits._source'], size=1)
+			resp = es.search(index="so-zeek-*", body={"query": {"bool": {"must": [{"wildcard": {"hash.md5": FILE_HASH}},{"range":{"@timestamp":{"gte": SEARCH_TIME_FRAME, "lt": "now"}}}]}}}, filter_path=['hits.hits._source'], size=1)
 			resp_filter = resp.get('hits', {}).get('hits')
 			resp_string = str(resp_filter)
 			if len(resp_string) >= 5:
@@ -130,14 +132,35 @@ def RETRO_HASH_SEARCH():
 					print("Found the following IOC: " + FILE_HASH) 
 	return
 
+#####################
+#Check for CLI args #
+#####################
+if len(sys.argv) > 1:
+	RETRO_SEARCH_TYPE = sys.argv[1]
+	RETRO_SEARCH_TIMEFRAME = sys.argv[2]
+	if RETRO_SEARCH_TYPE == "IP":
+		SEARCH_TIME_FRAME = "now-" + RETRO_SEARCH_TIMEFRAME + "d/d"
+		RETRO_IP_SEARCH(SEARCH_TIME_FRAME)
+		sys.exit()
+	elif RETRO_SEARCH_TYPE == "DOMAIN":
+		SEARCH_TIME_FRAME = "now-" + RETRO_SEARCH_TIMEFRAME + "d/d"
+		RETRO_DOMAIN_SEARCH(SEARCH_TIME_FRAME)
+		sys.exit()
+	elif RETRO_SEARCH_TYPE == "HASH":
+		SEARCH_TIME_FRAME = "now-" + RETRO_SEARCH_TIMEFRAME + "d/d"
+		RETRO_HASH_SEARCH(SEARCH_TIME_FRAME)
+		sys.exit()
+	elif RETRO_SEARCH_TYPE != "IP" or "DOMAIN" or "HASH":
+		print(" ")
+		print("Input not recognized! Please use the following format:")
+		print(RETRO_USAGE)
+		sys.exit()
+
 ###########################
 # Initial Prompt function #
 ###########################
 def RETRO_INITIAL_PROMPT():
-	#######################
-	#Define timeframe for #
-	#searching.           #
-	#######################
+	#Define timeframe for searching.
 	global TIME_FRAME
 	SEARCH_TIME_FRAME = "now-" + TIME_FRAME + "d/d"
 	INTRO_PROMPT = """
@@ -178,10 +201,10 @@ def RETRO_INITIAL_PROMPT():
 		RETRO_IP_SEARCH(SEARCH_TIME_FRAME)
 		RETRO_INITIAL_PROMPT()
 	elif USER_SELECTION == str(2):
-		RETRO_DOMAIN_SEARCH()
+		RETRO_DOMAIN_SEARCH(SEARCH_TIME_FRAME)
 		RETRO_INITIAL_PROMPT()
 	elif USER_SELECTION == str(3):
-		RETRO_HASH_SEARCH()
+		RETRO_HASH_SEARCH(SEARCH_TIME_FRAME)
 		RETRO_INITIAL_PROMPT()
 	elif USER_SELECTION == str(8):
 		TIME_FRAME = input("Please input the number of days you would like to search: ")
