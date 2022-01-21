@@ -21,7 +21,7 @@ import warnings
 warnings.filterwarnings('ignore', '.*verify_cert*', )
 
 #######################
-#Define timeframe for #
+#Define time frame for #
 #searching.           #
 #######################
 TIME_FRAME = "1"
@@ -32,29 +32,14 @@ TIME_FRAME = "1"
 RETRO_USAGE = """CLI Usage: python3 retrosearch.py [Type(IP, DOMAIN, HASH)] [Timeframe(in days)]
 example: sudo python3 retroseach.py IP 2
 """
-#####################
-#Check for CLI args #
-#####################
-#if len(sys.argv) > 1:
-#	RETRO_SEARCH_TYPE = sys.argv[1]
-#	RETRO_SEARCH_TIMEFRAME = sys.argv[2]
-#	if RETRO_SEARCH_TYPE == "IP":
-#		SEARCH_TIME_FRAME = "now-" + RETRO_SEARCH_TIMEFRAME + "d/d"
-#		RETRO_IP_SEARCH(SEARCH_TIME_FRAME)
-#		exit
-#	elif RETRO_SEARCH_TYPE == "DOMAIN":
-#		print("DOAMIN")
-#	elif RETRO_SEARCH_TYPE == "HASH":
-#		print("HASH")
-#	elif RETRO_SEARCH_TYPE != "IP" or "DOMAIN" or "HASH":
-#		print(" ")
-#		print("Input not recognized! Please use the following format:")
-#		print(RETRO_USAGE)
 
 #################################	
 # elasticsearch config settings #
 #################################
-es = Elasticsearch("https://localhost:9200", http_auth=("so_elastic", "g32dwgWAe9EAix9cwlqi"), verify_certs=False) 
+with open("/opt/so/conf/elasticsearch/curl.config") as ELASTIC_CRED:
+	for line in ELASTIC_CRED:
+		ELASTIC_PASS = (line.split(':')[-1].strip('"'))
+es = Elasticsearch("https://localhost:9200", http_auth=("so_elastic", ELASTIC_PASS), verify_certs=False) 
 
 #######################
 # IP search function  #
@@ -63,7 +48,7 @@ def RETRO_IP_SEARCH(SEARCH_TIME_FRAME):
 	with open('retrosearch_ip.dat') as file_object:
 		for line in file_object:
 			IP_ADDRESS = (line.rstrip())
-			resp = es.search(index="so-zeek-*", body={"query": {"bool": {"must": [{"wildcard": {"destination.ip.keyword": IP_ADDRESS }},{"range":{"@timestamp":{"gte": SEARCH_TIME_FRAME, "lt": "now"}}}]}}}, filter_path=['hits.hits._source'], size=1)
+			resp = es.search(index="*:so-zeek-*", body={"query": {"bool": {"must": [{"wildcard": {"destination.ip.keyword": IP_ADDRESS }},{"range":{"@timestamp":{"gte": SEARCH_TIME_FRAME, "lt": "now"}}}]}}}, filter_path=['hits.hits._source'], size=1)
 			resp_filter = resp.get('hits', {}).get('hits')
 			resp_string = str(resp_filter)
 			if len(resp_string) >= 5:
@@ -73,7 +58,7 @@ def RETRO_IP_SEARCH(SEARCH_TIME_FRAME):
 					# Write output to a file
 					file_output = open("retrosearch_ip_results.txt", "a")
 					file_output.write("\n")
-					file_output.write("IOC " + IP_ADDRESS + " Found! Below is th original message:")
+					file_output.write("IOC " + IP_ADDRESS + " Found! Below is the original message:")
 					file_output.write("\n")
 					file_output.write(MESSAGE)
 					file_output.write("\n")
@@ -89,7 +74,7 @@ def RETRO_DOMAIN_SEARCH(SEARCH_TIME_FRAME):
 		for line in file_object:
 			DOMAIN_WILDCARD = (line.rstrip())
 			DOMAIN_NAME = "*" + DOMAIN_WILDCARD + "*"
-			resp = es.search(index="so-zeek-*", body={"query": {"bool": {"must": [{"wildcard": {"dns.query.name.keyword": DOMAIN_NAME}},{"range":{"@timestamp":{"gte": SEARCH_TIME_FRAME, "lt": "now"}}}]}}}, filter_path=['hits.hits._source'], size=1)
+			resp = es.search(index="*:so-zeek-*", body={"query": {"bool": {"must": [{"wildcard": {"dns.query.name.keyword": DOMAIN_NAME}},{"range":{"@timestamp":{"gte": SEARCH_TIME_FRAME, "lt": "now"}}}]}}}, filter_path=['hits.hits._source'], size=1)
 			resp_filter = resp.get('hits', {}).get('hits')
 			resp_string = str(resp_filter)
 			if len(resp_string) >= 5:
@@ -99,7 +84,7 @@ def RETRO_DOMAIN_SEARCH(SEARCH_TIME_FRAME):
 					# Write output to a file
 					file_output = open("retrosearch_domain_results.txt", "a")
 					file_output.write("\n")
-					file_output.write("IOC " + DOMAIN_WILDCARD + " Found! Below is th original message:")
+					file_output.write("IOC " + DOMAIN_WILDCARD + " Found! Below is the original message:")
 					file_output.write("\n")
 					file_output.write(MESSAGE)
 					file_output.write("\n")
@@ -114,7 +99,7 @@ def RETRO_HASH_SEARCH(SEARCH_TIME_FRAME):
 	with open('retrosearch_hash.dat') as file_object:
 		for line in file_object:
 			FILE_HASH = (line.rstrip())
-			resp = es.search(index="so-zeek-*", body={"query": {"bool": {"must": [{"wildcard": {"hash.md5": FILE_HASH}},{"range":{"@timestamp":{"gte": SEARCH_TIME_FRAME, "lt": "now"}}}]}}}, filter_path=['hits.hits._source'], size=1)
+			resp = es.search(index="*:so-zeek-*", body={"query": {"bool": {"must": [{"wildcard": {"hash.md5": FILE_HASH}},{"range":{"@timestamp":{"gte": SEARCH_TIME_FRAME, "lt": "now"}}}]}}}, filter_path=['hits.hits._source'], size=1)
 			resp_filter = resp.get('hits', {}).get('hits')
 			resp_string = str(resp_filter)
 			if len(resp_string) >= 5:
@@ -124,7 +109,7 @@ def RETRO_HASH_SEARCH(SEARCH_TIME_FRAME):
 					# Write output to a file
 					file_output = open("retrosearch_hash_results.txt", "a")
 					file_output.write("\n")
-					file_output.write("IOC " + FILE_HASH + " Found! Below is th original message:")
+					file_output.write("IOC " + FILE_HASH + " Found! Below is the original message:")
 					file_output.write("\n")
 					file_output.write(MESSAGE)
 					file_output.write("\n")
@@ -160,7 +145,7 @@ if len(sys.argv) > 1:
 # Initial Prompt function #
 ###########################
 def RETRO_INITIAL_PROMPT():
-	#Define timeframe for searching.
+	#Define time frame for searching.
 	global TIME_FRAME
 	SEARCH_TIME_FRAME = "now-" + TIME_FRAME + "d/d"
 	INTRO_PROMPT = """
@@ -188,13 +173,13 @@ def RETRO_INITIAL_PROMPT():
 #    Note: Place Hash IOCs in the following file: retrosearch_hash.dat                 #
 #          Results can be found in the following file: retrosearch_hash_results.txt    #
 #                                                                                      #
-#  To change the search timeframe: Press 8                                             #  
+#  To change the search time frame: Press 8                                             #  
 #                                                                                      #
 #  To Exit Retrosearch: Press 9                                                        #
 ########################################################################################
 """
 	print(INTRO_PROMPT)
-	print("                    The current timeframe settings is: " + str(TIME_FRAME) + " day(s)") 
+	print("                    The current time frame settings is: " + str(TIME_FRAME) + " day(s)") 
 	print(INITIAL_PROMPT)
 	USER_SELECTION = input("Please choose from the above options:")
 	if USER_SELECTION == str(1):  
