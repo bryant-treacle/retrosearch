@@ -1,11 +1,11 @@
-                                                                         Welcome to
-                                                ____  _____ _____ ____   ___    ____  _____    _    ____   ____ _   _ 
-                                               |  _ \| ____|_   _|  _ \ / _ \  / ___|| ____|  / \  |  _ \ / ___| | | |
-                                               | |_) |  _|   | | | |_) | | | | \___ \|  _|   / _ \ | |_) | |   | |_| |
-                                               |  _ <| |___  | | |  _ <| |_| |  ___) | |___ / ___ \|  _ <| |___|  _  |
-                                               |_| \_\_____| |_| |_| \_\\___/  |____/|_____/_/   \_\_| \_\\____|_| |_|
+                                                                  Welcome to
+                                        ____  _____ _____ ____   ___    ____  _____    _    ____   ____ _   _ 
+                                       |  _ \| ____|_   _|  _ \ / _ \  / ___|| ____|  / \  |  _ \ / ___| | | |
+                                       | |_) |  _|   | | | |_) | | | | \___ \|  _|   / _ \ | |_) | |   | |_| |
+                                       |  _ <| |___  | | |  _ <| |_| |  ___) | |___ / ___ \|  _ <| |___|  _  |
+                                       |_| \_\_____| |_| |_| \_\\___/  |____/|_____/_/   \_\_| \_\\____|_| |_|
 
-                                                            Travel back in time and identify IOC!
+                                                     Travel back in time and identify IOC!
 
 
 This Python3 Script will allow you to retroactively search for Atomic Indicators (IPs, Domains, and MD5 Hashes) in Security Onion 2. The atomic indicators need to be placed in the following files:
