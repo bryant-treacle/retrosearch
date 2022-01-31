@@ -12,13 +12,14 @@ This Python3 Script will allow you to retroactively search for Atomic Indicators
    - IPs: retrosearch_ip.dat
    - Domains: retrosearch_domain.dat
    - Hashes: retrosearch_domain.dat
+   - Wildcard: retrosearch_wildcard.dat
 
 Usage: Retrosearch can be run interactively or through command-line arguments.
    - Interactive mode:
       - Usage: sudo Python3 retro_search.py
    
    - Commandline mode:
-      - Usage: python3 retrosearch.py <Type(IP, DOMAIN, HASH)> <Timeframe(in days)>
+      - Usage: python3 retrosearch.py <Type(IP, DOMAIN, HASH, WILDCARD)> <Timeframe(in days)>
       - example: sudo python3 retroseach.py IP 2
      
 Installation:
