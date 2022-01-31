@@ -29,7 +29,7 @@ TIME_FRAME = "1"
 #########
 # Usage #
 #########
-RETRO_USAGE = """CLI Usage: python3 retrosearch.py [Type(IP, DOMAIN, HASH)] [Timeframe(in days)]
+RETRO_USAGE = """CLI Usage: python3 retrosearch.py [Type(IP, DOMAIN, HASH, WILDCARD)] [Timeframe(in days)]
 example: sudo python3 retroseach.py IP 2
 """
 
@@ -40,6 +40,32 @@ with open("/opt/so/conf/elasticsearch/curl.config") as ELASTIC_CRED:
 	for line in ELASTIC_CRED:
 		ELASTIC_PASS = (line.split(':')[-1].strip('"'))
 es = Elasticsearch("https://localhost:9200", http_auth=("so_elastic", ELASTIC_PASS), verify_certs=False) 
+
+
+############################
+# Wildcard search Function #
+############################
+def RETRO_WILDCARD_SEARCH(SEARCH_TIME_FRAME):
+	with open('retrosearch_wildcard.dat') as file_object:
+		for line in file_object:
+			WILDCARD_ITEM = (line.rstrip())
+			resp = es.search(index="*:so-*", body={"query": {"bool": {"must": [{"query_string": {"query": WILDCARD_ITEM }}, {"range":{"@timestamp":{"gte": SEARCH_TIME_FRAME, "lt": "now"}}}]}}},filter_path=['hits.hits._source'], size=1)
+			resp_filter = resp.get('hits', {}).get('hits')
+			resp_string = str(resp_filter)
+			if len(resp_string) >= 5:
+				resp_source = resp_filter[0]
+				for resp_dict in resp_source:
+					MESSAGE = str(resp_source.get('_source', []).get('message'))
+					# Write output to a file
+					file_output = open("retrosearch_wildcard_results.txt", "a")
+					file_output.write("\n")
+					file_output.write("IOC " + WILDCARD_ITEM + " Found! Below is the original message:")
+					file_output.write("\n")
+					file_output.write(MESSAGE)
+					file_output.write("\n")
+					file_output.close
+					print("Found the following IOC: " + WILDCARD_ITEM)
+	return
 
 #######################
 # IP search function  #
@@ -135,7 +161,11 @@ if len(sys.argv) > 1:
 		SEARCH_TIME_FRAME = "now-" + RETRO_SEARCH_TIMEFRAME + "d/d"
 		RETRO_HASH_SEARCH(SEARCH_TIME_FRAME)
 		sys.exit()
-	elif RETRO_SEARCH_TYPE != "IP" or "DOMAIN" or "HASH":
+	elif RETRO_SEARCH_TYPE == "WILDCARD":
+		SEARCH_TIME_FRAME = "now-" + RETRO_SEARCH_TIMEFRAME + "d/d"
+		RETRO_WILDCARD_SEARCH(SEARCH_TIME_FRAME)
+		sys.exit()
+	elif RETRO_SEARCH_TYPE != "IP" or "DOMAIN" or "HASH" or "WILDCARD":
 		print(" ")
 		print("Input not recognized! Please use the following format:")
 		print(RETRO_USAGE)
@@ -160,23 +190,28 @@ def RETRO_INITIAL_PROMPT():
 """
 
 	INITIAL_PROMPT = """
-########################################################################################
-#  To retroactively search for IP addresses: Press 1                                    #
-#    Note: Place IP IOCs in the following file: retrosearch_ip.dat                     #
-#          Results can be found in the following file: retrosearch_ip_results.txt      #
-#                                                                                      #
-#  To retroactively search for Domains: Press 2                                         #  
-#    Note: Place Domain IOCs in the following file: retrosearch_domain.dat             #
-#          Results can be found in the following file: retrosearch_domain_results.txt  #
-#                                                                                      #
-#  To retroactively search for md5 file hashes: Press 3                                 #
-#    Note: Place Hash IOCs in the following file: retrosearch_hash.dat                 #
-#          Results can be found in the following file: retrosearch_hash_results.txt    #
-#                                                                                      #
-#  To change the search time frame: Press 8                                             #  
-#                                                                                      #
-#  To Exit Retrosearch: Press 9                                                        #
-########################################################################################
+##########################################################################################
+#  To retroactively search for IP addresses: Press 1                                     #
+#    Note: Place IP IOCs in the following file: retrosearch_ip.dat                       #
+#          Results can be found in the following file: retrosearch_ip_results.txt        #
+#                                                                                        #
+#  To retroactively search for Domains: Press 2                                          #  
+#    Note: Place Domain IOCs in the following file: retrosearch_domain.dat               #
+#          Results can be found in the following file: retrosearch_domain_results.txt    #
+#                                                                                        #
+#  To retroactively search for md5 file hashes: Press 3                                  #
+#    Note: Place Hash IOCs in the following file: retrosearch_hash.dat                   #
+#          Results can be found in the following file: retrosearch_hash_results.txt      #
+#                                                                                        #
+#  To retroactivly search for wildcard queries: Press 4                                  #
+#    Note: Wildcard Queries can retrun a larger number of false positive results         #
+#          Place the wildcard string in the following file: retrosearch_wildcard.dat     #
+#	   Results can be found in the following file: retrosearch_wildcard_results.txt  #
+#                                                                                        #
+#  To change the search time frame: Press 8                                              #  
+#                                                                                        #
+#  To Exit Retrosearch: Press 9                                                          #
+##########################################################################################
 """
 	print(INTRO_PROMPT)
 	print("                    The current time frame settings is: " + str(TIME_FRAME) + " day(s)") 
@@ -190,6 +225,9 @@ def RETRO_INITIAL_PROMPT():
 		RETRO_INITIAL_PROMPT()
 	elif USER_SELECTION == str(3):
 		RETRO_HASH_SEARCH(SEARCH_TIME_FRAME)
+		RETRO_INITIAL_PROMPT()
+	elif USER_SELECTION == str(4):
+		RETRO_WILDCARD_SEARCH(SEARCH_TIME_FRAME)
 		RETRO_INITIAL_PROMPT()
 	elif USER_SELECTION == str(8):
 		TIME_FRAME = input("Please input the number of days you would like to search: ")
